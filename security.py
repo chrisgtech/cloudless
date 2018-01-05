@@ -1,3 +1,5 @@
+#! python3
+
 from OpenSSL import crypto, SSL
 from uuid import uuid4
 
