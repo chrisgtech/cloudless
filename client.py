@@ -6,8 +6,6 @@ from twisted.internet.defer import Deferred
 from twisted.internet.protocol import ClientFactory
 from twisted.protocols.basic import LineReceiver
 
-import echoclient
-
 class EchoClient(LineReceiver):
     end = b"Bye-bye!"
 

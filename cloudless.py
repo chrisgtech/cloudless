@@ -1,11 +1,15 @@
 #! python3
+import sys
+if sys.version_info < (3, 0):
+    sys.stdout.write("Python 3.x is required")
+    sys.exit(1)
+
 from argparse import ArgumentParser
 from configparser import ConfigParser
 from pathlib import Path
 
 import security, server, client
 
-WARNING = f'This only works on Python 3.6'
 CONFIG_FILE = Path('cloudless.ini')
 UNKNOWN = 'UNKNOWN'
 
@@ -15,6 +19,7 @@ def loadconfig():
     if not config.exists():
         group = {}
         group['name'] = UNKNOWN
+        group['port'] = '57755'
         options['group'] = group
         machine = {}
         machine['name'] = UNKNOWN
@@ -62,12 +67,12 @@ def main():
         return
     host = options['machine']['name']
     if args.server:
-        print(f'Running server for {host}')
+        print('Running server for {}'.format(host))
         server.main()
         return
     if args.machine:
         remote = args.machine
-        print(f'Connecting to  {remote}')
+        print('Connecting to  {}'.format(remote))
         client.main()
         return
     parser.print_help()
