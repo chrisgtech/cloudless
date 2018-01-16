@@ -6,54 +6,92 @@ from twisted.internet.defer import Deferred
 from twisted.internet.protocol import ClientFactory
 from twisted.protocols.basic import LineReceiver
 
-class EchoClient(LineReceiver):
-    end = b"Bye-bye!"
+from twisted.internet import reactor, defer, endpoints
+from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
+from twisted.protocols.amp import AMP
+from twisted.internet.task import deferLater
+from server import Sum, Divide
 
-    def connectionMade(self):
-        self.sendLine(b"Hello, world!")
-        self.sendLine(b"What a fine day it is.")
-        self.sendLine(self.end)
-
-
-    def lineReceived(self, line):
-        print("receive:", line)
-        if line == self.end:
-            self.transport.loseConnection()
-
-class EchoClientFactory(ClientFactory):
-    protocol = EchoClient
-
-    def __init__(self):
-        self.done = Deferred()
+#class EchoClient(LineReceiver):
+#    end = b"Bye-bye!"
+#
+#    def connectionMade(self):
+#        self.sendLine(b"Hello, world!")
+#        self.sendLine(b"What a fine day it is.")
+#        self.sendLine(self.end)
 
 
-    def clientConnectionFailed(self, connector, reason):
-        print('connection failed:', reason.getErrorMessage())
-        self.done.errback(reason)
+#    def lineReceived(self, line):
+#        print("receive:", line)
+#        if line == self.end:
+#            self.transport.loseConnection()
+
+#class EchoClientFactory(ClientFactory):
+#    protocol = EchoClient
+
+#    def __init__(self):
+#        self.done = Deferred()
 
 
-    def clientConnectionLost(self, connector, reason):
-        print('connection lost:', reason.getErrorMessage())
-        self.done.callback(None)
+#    def clientConnectionFailed(self, connector, reason):
+#        print('connection failed:', reason.getErrorMessage())
+#        self.done.errback(reason)
 
-@defer.inlineCallbacks
-def run(reactor, host, port, name, group):
-    factory = protocol.Factory.forProtocol(EchoClient)
+
+#    def clientConnectionLost(self, connector, reason):
+#        print('connection lost:', reason.getErrorMessage())
+#        self.done.callback(None)
+
+#@defer.inlineCallbacks
+#def run(reactor, host, port, name, group):
+#    factory = protocol.Factory.forProtocol(EchoClient)
+#    certData = getModule(__name__).filePath.sibling('{}.pem'.format(group)).getContent()
+#    authority = ssl.Certificate.loadPEM(certData)
+#    options = ssl.optionsForClientTLS(name, authority)
+#    endpoint = endpoints.SSL4ClientEndpoint(reactor, host, port, options)
+#    echoClient = yield endpoint.connect(factory)
+
+#    done = defer.Deferred()
+#    def cally(reason):
+#        print('connection lost:', reason.getErrorMessage())
+#        done.callback(None)
+#    echoClient.connectionLost = cally
+#    yield done
+
+#@defer.inlineCallbacks
+def doMath(host, port, name, group):
+    #factory = protocol.Factory.forProtocol(EchoClient)
     certData = getModule(__name__).filePath.sibling('{}.pem'.format(group)).getContent()
     authority = ssl.Certificate.loadPEM(certData)
     options = ssl.optionsForClientTLS(name, authority)
-    endpoint = endpoints.SSL4ClientEndpoint(reactor, host, port, options)
-    echoClient = yield endpoint.connect(factory)
+    destination = endpoints.SSL4ClientEndpoint(reactor, host, port, options)
+    sumDeferred = connectProtocol(destination, AMP())
+    def connected(ampProto):
+        return ampProto.callRemote(Sum, a=13, b=81)
+    sumDeferred.addCallback(connected)
+    def summed(result):
+        return result['total']
+    sumDeferred.addCallback(summed)
 
-    done = defer.Deferred()
-    def cally(reason):
-        print('connection lost:', reason.getErrorMessage())
-        done.callback(None)
-    echoClient.connectionLost = cally
-    yield done
+    divideDeferred = connectProtocol(destination, AMP())
+    def connected(ampProto):
+        return ampProto.callRemote(Divide, numerator=1234, denominator=1)
+    divideDeferred.addCallback(connected)
+    def trapZero(result):
+        result.trap(ZeroDivisionError)
+        print("Divided by zero: returning INF")
+        return 1e1000
+    divideDeferred.addErrback(trapZero)
+
+    def done(result):
+        print('Done with math:', result)
+        reactor.stop()
+    defer.DeferredList([sumDeferred, divideDeferred]).addCallback(done)
 
 def main(host, port , name, group):
-    task.react(run, (host, port , name, group))
+    doMath(host, port, name, group)
+    reactor.run()
+    #task.react(run, (host, port , name, group))
     
 if __name__ == '__main__':
     import client
