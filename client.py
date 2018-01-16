@@ -37,13 +37,12 @@ class EchoClientFactory(ClientFactory):
         self.done.callback(None)
 
 @defer.inlineCallbacks
-def run(reactor):
+def run(reactor, host, port, name, group):
     factory = protocol.Factory.forProtocol(EchoClient)
-    certData = getModule(__name__).filePath.sibling('cloudy.pem').getContent()
+    certData = getModule(__name__).filePath.sibling('{}.pem'.format(group)).getContent()
     authority = ssl.Certificate.loadPEM(certData)
-    options = ssl.optionsForClientTLS('work', authority)
-    endpoint = endpoints.SSL4ClientEndpoint(reactor, 'localhost', 8000,
-                                            options)
+    options = ssl.optionsForClientTLS(name, authority)
+    endpoint = endpoints.SSL4ClientEndpoint(reactor, host, port, options)
     echoClient = yield endpoint.connect(factory)
 
     done = defer.Deferred()
@@ -53,9 +52,9 @@ def run(reactor):
     echoClient.connectionLost = cally
     yield done
 
-def main():
-    task.react(run)
+def main(host, port , name, group):
+    task.react(run, (host, port , name, group))
     
 if __name__ == '__main__':
     import client
-    client.main()
+    client.main('localhost', 8000, 'test', 'test')

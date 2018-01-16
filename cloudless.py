@@ -68,12 +68,19 @@ def main():
     host = options['machine']['name']
     if args.server:
         print('Running server for {}'.format(host))
-        server.main()
+        port = options['group']['port']
+        if 'port' in options['machine']:
+            port = options['machine']['port']
+        server.main(int(port), host)
         return
     if args.machine:
         remote = args.machine
         print('Connecting to  {}'.format(remote))
-        client.main()
+        group = options['group']['name']
+        port = options['group']['port']
+        if 'port' in options['machine']:
+            port = options['machine']['port']
+        client.main('localhost', int(port), remote, group)
         return
     parser.print_help()
     

@@ -13,17 +13,17 @@ class Echo(protocol.Protocol):
         """
         self.transport.write(data)
         
-def run(reactor):
+def run(reactor, port, name):
     log.startLogging(sys.stdout)
-    certData = getModule(__name__).filePath.sibling('work-prv.pem').getContent()
+    certData = getModule(__name__).filePath.sibling('{}-prv.pem'.format(name)).getContent()
     certificate = ssl.PrivateCertificate.loadPEM(certData)
     factory = protocol.Factory.forProtocol(Echo)
-    reactor.listenSSL(8000, factory, certificate.options())
+    reactor.listenSSL(port, factory, certificate.options())
     return defer.Deferred()
 
-def main():
-    task.react(run)
+def main(port, name):
+    task.react(run, (port, name))
     
 if __name__ == '__main__':
     import server
-    server.main()
+    server.main(8000, 'test')
