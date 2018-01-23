@@ -7,13 +7,6 @@ from twisted.protocols import amp
 from twisted.python import log
 from twisted.python.modules import getModule
 
-#class Echo(protocol.Protocol):
-#    def dataReceived(self, data):
-#        """
-#        As soon as any data is received, write it back.
-#        """
-#        self.transport.write(data)
-
 class Sum(amp.Command):
     arguments = [(b'a', amp.Integer()),
                  (b'b', amp.Integer())]
@@ -27,7 +20,7 @@ class Divide(amp.Command):
     errors = {ZeroDivisionError: b'ZERO_DIVISION'}
 
 
-class Math(amp.AMP):
+class Cloudless(amp.AMP):
     def sum(self, a, b):
         total = a + b
         print('Did a sum: %d + %d = %d' % (a, b, total))
@@ -44,7 +37,7 @@ def run(reactor, port, name):
     log.startLogging(sys.stdout)
     certData = getModule(__name__).filePath.sibling('{}-prv.pem'.format(name)).getContent()
     certificate = ssl.PrivateCertificate.loadPEM(certData)
-    factory = protocol.Factory.forProtocol(Math)
+    factory = protocol.Factory.forProtocol(Cloudless)
     reactor.listenSSL(port, factory, certificate.options())
     return defer.Deferred()
 
