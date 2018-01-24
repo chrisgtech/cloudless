@@ -25,12 +25,12 @@ def loadconfig():
         machine['name'] = UNKNOWN
         options['machine'] = machine
         saveconfig(options)
-    options.read(config)
+    options.read(str(config))
     return options
         
 def saveconfig(options):
     config = CONFIG_FILE
-    with open(config, 'w') as configfile:
+    with open(str(config), 'w') as configfile:
         options.write(configfile)
         
 def init(options):
