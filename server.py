@@ -33,17 +33,19 @@ class Cloudless(amp.AMP):
         return {'result': result}
     Divide.responder(divide)
         
-def run(reactor, port, name):
+def run(reactor, group, machine, port):
     log.startLogging(sys.stdout)
-    certData = getModule(__name__).filePath.sibling('{}-prv.pem'.format(name)).getContent()
-    certificate = ssl.PrivateCertificate.loadPEM(certData)
+    groupcontent = getModule(__name__).filePath.sibling('{}.pem'.format(group)).getContent()
+    machinecontent = getModule(__name__).filePath.sibling('{}-prv.pem'.format(machine)).getContent()
+    groupcert = ssl.Certificate.loadPEM(groupcontent)
+    machinecert = ssl.PrivateCertificate.loadPEM(machinecontent)
     factory = protocol.Factory.forProtocol(Cloudless)
-    reactor.listenSSL(port, factory, certificate.options())
+    reactor.listenSSL(port, factory, machinecert.options(groupcert))
     return defer.Deferred()
 
-def main(port, name):
-    task.react(run, (port, name))
+def main(group, machine, port):
+    task.react(run, (group, machine, port))
     
 if __name__ == '__main__':
     import server
-    server.main(8000, 'test')
+    server.main('testgroup', 'test', 80)

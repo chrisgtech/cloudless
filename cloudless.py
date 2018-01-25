@@ -49,6 +49,8 @@ def main():
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument('-s', '--server', action="store_true", help='Run in server mode')
     modes.add_argument('-m', '--machine', help='Machine to connect to')
+    parser.add_argument('-r', '--remote', help='Remote host of machine')
+    parser.add_argument('-p', '--port', help='Port for connection')
     args = parser.parse_args()
     options = loadconfig()
     notsetup = options['group']['name'] == UNKNOWN
@@ -65,22 +67,29 @@ def main():
         options['machine']['name'] = machinename
         saveconfig(options)
         return
-    host = options['machine']['name']
+    thismachine = options['machine']['name']
+    group = options['group']['name']
     if args.server:
-        print('Running server for {}'.format(host))
+        print('Running server for {}'.format(thismachine))
         port = options['group']['port']
         if 'port' in options['machine']:
             port = options['machine']['port']
-        server.main(int(port), host)
+        if args.port:
+            port = args.port
+        server.main(group, thismachine, int(port))
         return
     if args.machine:
         remote = args.machine
         print('Connecting to  {}'.format(remote))
-        group = options['group']['name']
         port = options['group']['port']
         if 'port' in options['machine']:
             port = options['machine']['port']
-        client.main('localhost', int(port), remote, group)
+        if args.port:
+            port = args.port
+        host = 'localhost'
+        if args.remote:
+            host = args.remote
+        client.main(group, thismachine, remote, host, int(port))
         return
     parser.print_help()
     

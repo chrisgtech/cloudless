@@ -15,7 +15,8 @@ from server import Sum, Divide
 class CloudClient(AMP):
 
     def connectionMade(self):
-        print('Connected')
+        pass
+        #print('Connected')
         #self.callRemote(Divide, numerator=1234, denominator=1)
 
     #def lineReceived(self, line):
@@ -25,11 +26,13 @@ class CloudClient(AMP):
 
     
 @defer.inlineCallbacks
-def run(reactor, host, port, name, group):
+def run(reactor, group, machine, remote, host, port):
     factory = protocol.Factory.forProtocol(CloudClient)
-    certData = getModule(__name__).filePath.sibling('{}.pem'.format(group)).getContent()
-    authority = ssl.Certificate.loadPEM(certData)
-    options = ssl.optionsForClientTLS(name, authority)
+    machinecontent = getModule(__name__).filePath.sibling('{}-prv.pem'.format(machine)).getContent()
+    groupcontent = getModule(__name__).filePath.sibling('{}.pem'.format(group)).getContent()
+    machinecert = ssl.PrivateCertificate.loadPEM(machinecontent)
+    groupcert = ssl.Certificate.loadPEM(groupcontent)
+    options = ssl.optionsForClientTLS(machine, groupcert, machinecert)
     endpoint = endpoints.SSL4ClientEndpoint(reactor, host, port, options)
     cloudClient = yield endpoint.connect(factory)
     print('connected!')
@@ -54,9 +57,9 @@ def run(reactor, host, port, name, group):
     #cloudClient.connectionLost = cally
     #yield done
 
-def main(host, port , name, group):
-    task.react(run, (host, port , name, group))
+def main(group, machine, remote, host, port):
+    task.react(run, (group, machine, remote, host, port))
     
 if __name__ == '__main__':
     import client
-    client.main('localhost', 8000, 'test', 'test')
+    client.main('testgroup', 'test', 'test', 'localhost', 80)
