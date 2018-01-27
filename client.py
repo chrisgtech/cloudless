@@ -1,5 +1,7 @@
 #! python3
 
+from pathlib import Path
+
 from twisted.internet import ssl, task, protocol, endpoints, defer
 from twisted.python.modules import getModule
 from twisted.internet.defer import Deferred
@@ -10,6 +12,7 @@ from twisted.internet import reactor, defer, endpoints
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
 from twisted.protocols.amp import AMP
 from twisted.internet.task import deferLater
+
 from server import Sum, Divide
     
 class CloudClient(AMP):
@@ -28,8 +31,10 @@ class CloudClient(AMP):
 @defer.inlineCallbacks
 def run(reactor, group, machine, remote, host, port):
     factory = protocol.Factory.forProtocol(CloudClient)
-    machinecontent = getModule(__name__).filePath.sibling('{}-prv.pem'.format(machine)).getContent()
-    groupcontent = getModule(__name__).filePath.sibling('{}.pem'.format(group)).getContent()
+    machinepath = Path('{}-prv.pem'.format(machine))
+    machinecontent = machinepath.read_text()
+    grouppath = Path('{}.pem'.format(group))
+    groupcontent = grouppath.read_text()
     machinecert = ssl.PrivateCertificate.loadPEM(machinecontent)
     groupcert = ssl.Certificate.loadPEM(groupcontent)
     options = ssl.optionsForClientTLS(machine, groupcert, machinecert)

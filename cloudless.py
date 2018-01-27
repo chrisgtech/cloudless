@@ -7,6 +7,7 @@ if sys.version_info < (3, 0):
 from argparse import ArgumentParser
 from configparser import ConfigParser
 from pathlib import Path
+from io import StringIO
 
 import security, server, client
 
@@ -25,13 +26,17 @@ def loadconfig():
         machine['name'] = UNKNOWN
         options['machine'] = machine
         saveconfig(options)
-    options.read(str(config))
+    content = config.read_text()
+    options.read_string(content)
+    saveconfig(options)
     return options
         
 def saveconfig(options):
     config = CONFIG_FILE
-    with open(str(config), 'w') as configfile:
-        options.write(configfile)
+    with StringIO() as writer:
+        options.write(writer)
+        content = writer.getvalue()
+        config.write_text(content)
         
 def init(options):
     groupname = input('Enter name for new group: ')

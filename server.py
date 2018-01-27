@@ -1,6 +1,7 @@
 #! python3
 
 import sys
+from pathlib import Path
 
 from twisted.internet import ssl, protocol, task, defer
 from twisted.protocols import amp
@@ -35,8 +36,11 @@ class Cloudless(amp.AMP):
         
 def run(reactor, group, machine, port):
     log.startLogging(sys.stdout)
-    groupcontent = getModule(__name__).filePath.sibling('{}.pem'.format(group)).getContent()
-    machinecontent = getModule(__name__).filePath.sibling('{}-prv.pem'.format(machine)).getContent()
+    grouppath = Path('{}.pem'.format(group))
+    groupcontent = grouppath.read_text()
+    machinepath = Path('{}-prv.pem'.format(machine))
+    machinecontent = machinepath.read_text()
+    
     groupcert = ssl.Certificate.loadPEM(groupcontent)
     machinecert = ssl.PrivateCertificate.loadPEM(machinecontent)
     factory = protocol.Factory.forProtocol(Cloudless)
