@@ -4,7 +4,7 @@ import socket
 import netifaces, ipgetter
 from ipaddress import ip_address
 
-def ifaceips():
+def localips():
     ips = []
     for iface in netifaces.interfaces():
         addresses = netifaces.ifaddresses(iface)
@@ -54,7 +54,7 @@ def internet(host="8.8.8.8", port=53, timeout=3):
         return False
     
 if __name__ == '__main__':
-    print(ifaceips())
+    print(localips())
     print(gateways())
     print(publicip())
     print(internet())

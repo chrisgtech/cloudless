@@ -1,7 +1,5 @@
 #! python3
 
-from pathlib import Path
-
 from twisted.internet import ssl, task, protocol, endpoints, defer
 from twisted.python.modules import getModule
 from twisted.internet.defer import Deferred
@@ -13,7 +11,8 @@ from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
 from twisted.protocols.amp import AMP
 from twisted.internet.task import deferLater
 
-from server import Sum, Divide
+from server import Info
+import security
     
 class CloudClient(AMP):
 
@@ -31,22 +30,20 @@ class CloudClient(AMP):
 @defer.inlineCallbacks
 def run(reactor, group, machine, remote, host, port):
     factory = protocol.Factory.forProtocol(CloudClient)
-    machinepath = Path('{}-prv.pem'.format(machine))
-    machinecontent = machinepath.read_text()
-    grouppath = Path('{}.pem'.format(group))
-    groupcontent = grouppath.read_text()
-    machinecert = ssl.PrivateCertificate.loadPEM(machinecontent)
-    groupcert = ssl.Certificate.loadPEM(groupcontent)
+    groupcert = security.loadcert(group, private=False)
+    machinecert = security.loadcert(machine, private=True)
     options = ssl.optionsForClientTLS(machine, groupcert, machinecert)
     endpoint = endpoints.SSL4ClientEndpoint(reactor, host, port, options)
     cloudClient = yield endpoint.connect(factory)
     print('connected!')
     
-    result = yield cloudClient.callRemote(Sum, a=13, b=81)
-    print(result['total'])
+    result = yield cloudClient.callRemote(Info, machine=remote)
+    print(result['publicip'])
+    print(result)
     
-    result = yield cloudClient.callRemote(Divide, numerator=1234, denominator=1)
-    print(result['result'])
+    result = yield cloudClient.callRemote(Info, machine='test')
+    print(result['publicip'])
+    print(result)
     return
     
     #def trapZero(result):

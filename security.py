@@ -1,7 +1,10 @@
 #! python3
 
-from OpenSSL import crypto, SSL
 from uuid import uuid4
+from pathlib import Path
+
+from OpenSSL import crypto, SSL
+from twisted.internet import ssl
 
 def certgen(name, root=None):
     private = crypto.PKey()
@@ -35,3 +38,14 @@ def certgen(name, root=None):
         pemfile.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
         pemfile.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, private))
         
+        
+def loadcert(name, private=False):
+    filename = '{}.pem'.format(name)
+    if private:
+        filename = '{}-prv.pem'.format(name)
+    certpath = Path(filename)
+    content = certpath.read_text()
+    if private:
+        return ssl.PrivateCertificate.loadPEM(content)
+    else:
+        return ssl.Certificate.loadPEM(content)

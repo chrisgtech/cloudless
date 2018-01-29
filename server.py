@@ -1,48 +1,43 @@
 #! python3
 
 import sys
-from pathlib import Path
 
-from twisted.internet import ssl, protocol, task, defer
+from twisted.internet import protocol, task, defer
 from twisted.protocols import amp
 from twisted.python import log
 from twisted.python.modules import getModule
 
-class Sum(amp.Command):
-    arguments = [(b'a', amp.Integer()),
-                 (b'b', amp.Integer())]
-    response = [(b'total', amp.Integer())]
+import security, net, user
 
-
-class Divide(amp.Command):
-    arguments = [(b'numerator', amp.Integer()),
-                 (b'denominator', amp.Integer())]
-    response = [(b'result', amp.Float())]
-    errors = {ZeroDivisionError: b'ZERO_DIVISION'}
-
+class Info(amp.Command):
+    arguments = [(b'machine', amp.Unicode())]
+    response = [(b'publicip', amp.Unicode()), (b'internet', amp.Boolean()),
+                (b'localips', amp.ListOf(amp.Unicode())), (b'gateways', amp.ListOf(amp.Unicode()))]
 
 class Cloudless(amp.AMP):
-    def sum(self, a, b):
-        total = a + b
-        print('Did a sum: %d + %d = %d' % (a, b, total))
-        return {'total': total}
-    Sum.responder(sum)
-
-    def divide(self, numerator, denominator):
-        result = float(numerator) / denominator
-        print('Divided: %d / %d = %f' % (numerator, denominator, result))
-        return {'result': result}
-    Divide.responder(divide)
+    def __init__(self):
+        super().__init__()
+        self.options = user.loadconfig()
+        self.machine = self.options['machine']['name']
+    
+    def info(self, machine):
+        print('Loaded machine info for {}'.format(machine))
+        info = {'publicip': user.UNKNOWN, 'internet': False, 'localips': [], 'gateways': []}
+        if machine == self.machine:
+            print('Getting local info')
+            info['publicip'] = net.publicip()
+            info['internet'] = net.internet()
+            info['localips'] = net.localips()
+            info['gateways'] = net.gateways()
+        else:
+            pass
+        return info
+    Info.responder(info)
         
 def run(reactor, group, machine, port):
     log.startLogging(sys.stdout)
-    grouppath = Path('{}.pem'.format(group))
-    groupcontent = grouppath.read_text()
-    machinepath = Path('{}-prv.pem'.format(machine))
-    machinecontent = machinepath.read_text()
-    
-    groupcert = ssl.Certificate.loadPEM(groupcontent)
-    machinecert = ssl.PrivateCertificate.loadPEM(machinecontent)
+    groupcert = security.loadcert(group, private=False)
+    machinecert = security.loadcert(machine, private=True)
     factory = protocol.Factory.forProtocol(Cloudless)
     reactor.listenSSL(port, factory, machinecert.options(groupcert))
     return defer.Deferred()

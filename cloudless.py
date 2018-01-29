@@ -5,47 +5,17 @@ if sys.version_info < (3, 0):
     sys.exit(1)
 
 from argparse import ArgumentParser
-from configparser import ConfigParser
-from pathlib import Path
-from io import StringIO
 
-import security, server, client
-
-CONFIG_FILE = Path('cloudless.ini')
-UNKNOWN = 'UNKNOWN'
-
-def loadconfig():
-    config = CONFIG_FILE
-    options = ConfigParser()
-    if not config.exists():
-        group = {}
-        group['name'] = UNKNOWN
-        group['port'] = '57755'
-        options['group'] = group
-        machine = {}
-        machine['name'] = UNKNOWN
-        options['machine'] = machine
-        saveconfig(options)
-    content = config.read_text()
-    options.read_string(content)
-    saveconfig(options)
-    return options
-        
-def saveconfig(options):
-    config = CONFIG_FILE
-    with StringIO() as writer:
-        options.write(writer)
-        content = writer.getvalue()
-        config.write_text(content)
+import security, server, client, net, user
         
 def init(options):
-    groupname = input('Enter name for new group: ')
+    groupname = user.prompt('Enter name for new group: ')
     security.certgen(groupname)
     return groupname
     
 def addmachine(options):
     groupname = options['group']['name']
-    machinename = input('Enter name for the machine: ')
+    machinename = user.prompt('Enter name for the machine: ')
     security.certgen(machinename, groupname)
     return machinename
 
@@ -57,20 +27,20 @@ def main():
     parser.add_argument('-r', '--remote', help='Remote host of machine')
     parser.add_argument('-p', '--port', help='Port for connection')
     args = parser.parse_args()
-    options = loadconfig()
-    notsetup = options['group']['name'] == UNKNOWN
+    options = user.loadconfig()
+    notsetup = options['group']['name'] == user.UNKNOWN
     if notsetup:
         print('No group set, running init')
         groupname = init(options)
         options['group']['name'] = groupname
-        saveconfig(options)
+        user.saveconfig(options)
         return
-    nomachine = options['machine']['name'] == UNKNOWN
+    nomachine = options['machine']['name'] == user.UNKNOWN
     if nomachine:
         print('No machine set, adding machine')
         machinename = addmachine(options)
         options['machine']['name'] = machinename
-        saveconfig(options)
+        user.saveconfig(options)
         return
     thismachine = options['machine']['name']
     group = options['group']['name']
