@@ -10,17 +10,14 @@ def localips():
         addresses = netifaces.ifaddresses(iface)
         if not netifaces.AF_INET in addresses:
             continue
-        #print(iface)
         info = addresses[netifaces.AF_INET]
-        print(info)
         address = ip_address(info[0]['addr'])
         if address.is_loopback:
-            print('Ignoring loopback {}'.format(address))
+            #print('Ignoring loopback {}'.format(address))
             continue
         if address.is_global:
-            print('Ignoring public {}'.format(address))
+            #print('Ignoring public {}'.format(address))
             continue
-        #print(address)
         ips.append(str(address))
     return ips
     
@@ -29,8 +26,6 @@ def gateways():
     for name, gateway in netifaces.gateways().items():
         if not netifaces.AF_INET in gateway:
             continue
-        #print(name)
-        #print(gateway)
         ip = gateway[netifaces.AF_INET][0]
         ips.append(ip)
     return ips

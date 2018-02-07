@@ -11,13 +11,13 @@ from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
 from twisted.protocols.amp import AMP
 from twisted.internet.task import deferLater
 
-from server import Info
+from server import Info, Cloudless
 import security
     
-class CloudClient(AMP):
+#class CloudClient(AMP):
 
-    def connectionMade(self):
-        pass
+    #def connectionMade(self):
+    #    pass
         #print('Connected')
         #self.callRemote(Divide, numerator=1234, denominator=1)
 
@@ -30,19 +30,17 @@ class CloudClient(AMP):
 @defer.inlineCallbacks
 def run(reactor, group, machine, remote, host, port):
     print('{} connecting to {}({}) on {}:{}'.format(machine, remote, group, host, port))
-    factory = protocol.Factory.forProtocol(CloudClient)
+    factory = protocol.Factory.forProtocol(Cloudless)
     groupcert = security.loadcert(group, private=False)
     machinecert = security.loadcert(machine, private=True)
     options = ssl.optionsForClientTLS(remote, groupcert, machinecert)
     endpoint = endpoints.SSL4ClientEndpoint(reactor, host, port, options)
     cloudClient = yield endpoint.connect(factory)
     
-    result = yield cloudClient.callRemote(Info, machine=remote)
-    print(result['publicip'])
+    result = yield cloudClient.callRemote(Info)
     print(result)
     
     result = yield cloudClient.callRemote(Info, machine='test')
-    print(result['publicip'])
     print(result)
     return
     

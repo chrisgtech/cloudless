@@ -20,7 +20,6 @@ def loadconfig():
         saveconfig(options)
     content = config.read_text()
     options.read_string(content)
-    saveconfig(options)
     return options
     
 def saveconfig(options):

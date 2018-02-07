@@ -55,7 +55,7 @@ def main():
         return
     if args.machine:
         remote = args.machine
-        print('Connecting to  {}'.format(remote))
+        print('Contacting {}'.format(remote))
         port = options['group']['port']
         if 'port' in options['machine']:
             port = options['machine']['port']

@@ -9,22 +9,59 @@ from twisted.python.modules import getModule
 
 import security, net, user
 
+global connections
+connections = {}
+
+def saveinfo(info):
+    options = user.loadconfig()
+    remote = info['machine']
+    name = 'machine-{}'.format(remote)
+    if name in options:
+        entry = options[name]
+        newtimestamp = info['timestamp']
+        oldtimestamp = float(entry['timestamp'])
+        if newtimestamp < oldtimestamp:
+            return
+    print('Saving details for {}'.format(remote))
+    options[name] = info
+    user.saveconfig(options)
+
 class Info(amp.Command):
-    arguments = [(b'machine', amp.Unicode())]
-    response = [(b'publicip', amp.Unicode()), (b'internet', amp.Boolean()),
-                (b'localips', amp.ListOf(amp.Unicode())), (b'gateways', amp.ListOf(amp.Unicode())),
-                (b'timestamp', amp.Float())]
+    arguments = [(b'machine', amp.Unicode(optional=True))]
+    response = [(b'machine', amp.Unicode()), (b'publicip', amp.Unicode()),
+                (b'internet', amp.Boolean()), (b'localips', amp.ListOf(amp.Unicode())),
+                (b'gateways', amp.ListOf(amp.Unicode())), (b'timestamp', amp.Float())]
 
 class Cloudless(amp.AMP):
     def __init__(self):
         super().__init__()
-        self.options = user.loadconfig()
-        self.machine = self.options['machine']['name']
+        options = user.loadconfig()
+        self.machine = options['machine']['name']
+        
+    def addConnection(self, info):
+        remote = info['machine']
+        print('Adding connection for {}'.format(remote))
+        global connections
+        connections[remote] = self
+    
+    @defer.inlineCallbacks   
+    def makeConnection(self, transport):
+        super().makeConnection(transport)
+        print('Made connection')
+        info = yield self.callRemote(Info)
+        self.addConnection(info)
+        saveinfo(info)
+        
+    def connectionLost(self, reason):
+        super().connectionLost(reason)
+        print('Lost connection')
     
     def info(self, machine):
-        print('Loaded machine info for {}'.format(machine))
+        if not machine:
+            machine = self.machine
+        print('Loading machine info for {}'.format(machine))
         unixtime = time.time()
-        info = {'publicip': user.UNKNOWN, 'internet': False, 'localips': [], 'gateways': [], 'timestamp': unixtime}
+        info = {'machine': machine, 'publicip': user.UNKNOWN, 'internet': False, 'localips': [], 'gateways': [], 'timestamp': unixtime}
         if machine == self.machine:
             print('Getting local info')
             info['publicip'] = net.publicip()
