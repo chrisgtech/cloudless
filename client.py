@@ -29,13 +29,13 @@ class CloudClient(AMP):
     
 @defer.inlineCallbacks
 def run(reactor, group, machine, remote, host, port):
+    print('{} connecting to {}({}) on {}:{}'.format(machine, remote, group, host, port))
     factory = protocol.Factory.forProtocol(CloudClient)
     groupcert = security.loadcert(group, private=False)
     machinecert = security.loadcert(machine, private=True)
-    options = ssl.optionsForClientTLS(machine, groupcert, machinecert)
+    options = ssl.optionsForClientTLS(remote, groupcert, machinecert)
     endpoint = endpoints.SSL4ClientEndpoint(reactor, host, port, options)
     cloudClient = yield endpoint.connect(factory)
-    print('connected!')
     
     result = yield cloudClient.callRemote(Info, machine=remote)
     print(result['publicip'])

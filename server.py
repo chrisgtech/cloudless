@@ -1,6 +1,6 @@
 #! python3
 
-import sys
+import sys, time
 
 from twisted.internet import protocol, task, defer
 from twisted.protocols import amp
@@ -12,7 +12,8 @@ import security, net, user
 class Info(amp.Command):
     arguments = [(b'machine', amp.Unicode())]
     response = [(b'publicip', amp.Unicode()), (b'internet', amp.Boolean()),
-                (b'localips', amp.ListOf(amp.Unicode())), (b'gateways', amp.ListOf(amp.Unicode()))]
+                (b'localips', amp.ListOf(amp.Unicode())), (b'gateways', amp.ListOf(amp.Unicode())),
+                (b'timestamp', amp.Float())]
 
 class Cloudless(amp.AMP):
     def __init__(self):
@@ -22,7 +23,8 @@ class Cloudless(amp.AMP):
     
     def info(self, machine):
         print('Loaded machine info for {}'.format(machine))
-        info = {'publicip': user.UNKNOWN, 'internet': False, 'localips': [], 'gateways': []}
+        unixtime = time.time()
+        info = {'publicip': user.UNKNOWN, 'internet': False, 'localips': [], 'gateways': [], 'timestamp': unixtime}
         if machine == self.machine:
             print('Getting local info')
             info['publicip'] = net.publicip()
@@ -36,6 +38,7 @@ class Cloudless(amp.AMP):
         
 def run(reactor, group, machine, port):
     log.startLogging(sys.stdout)
+    print('{}({}) running server on port {}'.format(machine, group, port))
     groupcert = security.loadcert(group, private=False)
     machinecert = security.loadcert(machine, private=True)
     factory = protocol.Factory.forProtocol(Cloudless)
